@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>دفتر الأصول والمصاريف</title>
+  <style>
+    body { font-family: sans-serif; background:#f4f4f4; padding:15px; text-align:center; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; background:white; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+    input { padding:5px; margin:3px; }
+    .sum { font-weight:bold; margin-top:10px; }
+    button { margin:5px; padding:8px 15px; border:none; background:#007bff; color:white; border-radius:5px; }
+    button:hover { background:#0056b3; }
+  </style>
+</head>
+<body dir="rtl">
+  <h2>📒 دفتر الأصول والمصاريف اليومي</h2>
+
+  <input type="text" id="name" placeholder="البيان" />
+  <input type="number" id="value" placeholder="القيمة" />
+  <select id="type">
+    <option value="asset">أصل</option>
+    <option value="expense">مصاريف</option>
+  </select>
+  <button onclick="addEntry()">إضافة</button>
+
+  <table id="dataTable">
+    <tr><th>البيان</th><th>النوع</th><th>القيمة</th></tr>
+  </table>
+
+  <div class="sum">
+    مجموع الأصول: <span id="totalAssets">0</span> |
+    مجموع المصاريف: <span id="totalExpenses">0</span>
+  </div>
+
+  <button onclick="printDay()">🖨️ طباعة اليوم</button>
+  <button onclick="clearAll()">🗑️ مسح الكل</button>
+
+  <script>
+    let data = JSON.parse(localStorage.getItem('dailyData')) || [];
+
+    function render() {
+      const table = document.getElementById('dataTable');
+      table.innerHTML = '<tr><th>البيان</th><th>النوع</th><th>القيمة</th></tr>';
+      let totalA = 0, totalE = 0;
+      data.forEach(d => {
+        table.innerHTML += `<tr><td>${d.name}</td><td>${d.type==='asset'?'أصل':'مصاريف'}</td><td>${d.value}</td></tr>`;
+        if (d.type==='asset') totalA += d.value; else totalE += d.value;
+      });
+      document.getElementById('totalAssets').textContent = totalA;
+      document.getElementById('totalExpenses').textContent = totalE;
+      localStorage.setItem('dailyData', JSON.stringify(data));
+    }
+
+    function addEntry() {
+      const name = document.getElementById('name').value;
+      const value = parseFloat(document.getElementById('value').value);
+      const type = document.getElementById('type').value;
+      if (!name || isNaN(value)) return alert('أدخل البيان والقيمة!');
+      data.push({ name, type, value });
+      render();
+      document.getElementById('name').value = '';
+      document.getElementById('value').value = '';
+    }
+
+    function printDay() { window.print(); }
+
+    function clearAll() {
+      if (confirm('هل تريد مسح كل البيانات؟')) {
+        data = [];
+        localStorage.removeItem('dailyData');
+        render();
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
