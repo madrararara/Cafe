@@ -1,80 +1,186 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>دفتر الأصول والمصاريف</title>
-  <style>
-    body { font-family: sans-serif; background:#f4f4f4; padding:15px; text-align:center; }
-    table { width:100%; border-collapse:collapse; margin-top:10px; background:white; }
-    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-    input { padding:5px; margin:3px; }
-    .sum { font-weight:bold; margin-top:10px; }
-    button { margin:5px; padding:8px 15px; border:none; background:#007bff; color:white; border-radius:5px; }
-    button:hover { background:#0056b3; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دفتر الأصول والمصاريف</title>
+<style>
+    body {
+        font-family: "Cairo", sans-serif;
+        background-color: #2f2f2f;
+        color: white;
+        text-align: center;
+        padding: 20px;
+    }
+
+    input, select {
+        padding: 8px;
+        margin: 5px;
+        border-radius: 8px;
+        border: none;
+        width: 120px;
+    }
+
+    button {
+        background-color: #7e57c2;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        margin: 10px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    button:hover {
+        background-color: #9c6df0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background-color: #3d3d3d;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #555;
+    }
+
+    .expense {
+        color: #ff5252;
+    }
+
+    .asset {
+        color: #4caf50;
+    }
+
+    .summary {
+        margin-top: 15px;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .total-final {
+        margin-top: 10px;
+        background-color: #444;
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 18px;
+    }
+
+</style>
 </head>
-<body dir="rtl">
-  <h2>📒 دفتر الأصول والمصاريف اليومي</h2>
+<body>
 
-  <input type="text" id="name" placeholder="البيان" />
-  <input type="number" id="value" placeholder="القيمة" />
-  <select id="type">
-    <option value="asset">أصل</option>
-    <option value="expense">مصاريف</option>
-  </select>
-  <button onclick="addEntry()">إضافة</button>
+<h2>📒 دفتر الأصول والمصاريف اليومي</h2>
 
-  <table id="dataTable">
-    <tr><th>البيان</th><th>النوع</th><th>القيمة</th></tr>
-  </table>
+<input type="text" id="desc" placeholder="البيان">
+<select id="type">
+    <option value="أصل">أصل</option>
+    <option value="مصروف">مصروف</option>
+</select>
+<input type="number" id="amount" placeholder="القيمة">
+<br>
+<button onclick="addEntry()">إضافة</button>
 
-  <div class="sum">
+<table id="records">
+    <tr>
+        <th>البيان</th>
+        <th>النوع</th>
+        <th>القيمة</th>
+    </tr>
+</table>
+
+<div class="summary">
     مجموع الأصول: <span id="totalAssets">0</span> |
     مجموع المصاريف: <span id="totalExpenses">0</span>
-  </div>
+</div>
 
-  <button onclick="printDay()">🖨️ طباعة اليوم</button>
-  <button onclick="clearAll()">🗑️ مسح الكل</button>
+<div class="total-final">
+    💰 المجموع النهائي (الأصول - المصاريف): <span id="finalTotal">0</span>
+</div>
 
-  <script>
-    let data = JSON.parse(localStorage.getItem('dailyData')) || [];
+<button onclick="clearAll()">🗑️ مسح الكل</button>
+<button onclick="printPage()">🖨️ طباعة اليوم</button>
 
-    function render() {
-      const table = document.getElementById('dataTable');
-      table.innerHTML = '<tr><th>البيان</th><th>النوع</th><th>القيمة</th></tr>';
-      let totalA = 0, totalE = 0;
-      data.forEach(d => {
-        table.innerHTML += `<tr><td>${d.name}</td><td>${d.type==='asset'?'أصل':'مصاريف'}</td><td>${d.value}</td></tr>`;
-        if (d.type==='asset') totalA += d.value; else totalE += d.value;
-      });
-      document.getElementById('totalAssets').textContent = totalA;
-      document.getElementById('totalExpenses').textContent = totalE;
-      localStorage.setItem('dailyData', JSON.stringify(data));
+<script>
+    let entries = JSON.parse(localStorage.getItem("entries")) || [];
+
+    function saveData() {
+        localStorage.setItem("entries", JSON.stringify(entries));
+    }
+
+    function renderTable() {
+        const table = document.getElementById("records");
+        table.innerHTML = `
+            <tr>
+                <th>البيان</th>
+                <th>النوع</th>
+                <th>القيمة</th>
+            </tr>
+        `;
+
+        let totalAssets = 0;
+        let totalExpenses = 0;
+
+        entries.forEach((entry, index) => {
+            const row = document.createElement("tr");
+            const typeClass = entry.type === "مصروف" ? "expense" : "asset";
+            row.innerHTML = `
+                <td>${entry.desc}</td>
+                <td class="${typeClass}">${entry.type}</td>
+                <td>${entry.amount}</td>
+            `;
+            table.appendChild(row);
+
+            if (entry.type === "مصروف") {
+                totalExpenses += entry.amount;
+            } else {
+                totalAssets += entry.amount;
+            }
+        });
+
+        document.getElementById("totalAssets").textContent = totalAssets;
+        document.getElementById("totalExpenses").textContent = totalExpenses;
+        document.getElementById("finalTotal").textContent = totalAssets - totalExpenses;
     }
 
     function addEntry() {
-      const name = document.getElementById('name').value;
-      const value = parseFloat(document.getElementById('value').value);
-      const type = document.getElementById('type').value;
-      if (!name || isNaN(value)) return alert('أدخل البيان والقيمة!');
-      data.push({ name, type, value });
-      render();
-      document.getElementById('name').value = '';
-      document.getElementById('value').value = '';
-    }
+        const desc = document.getElementById("desc").value;
+        const type = document.getElementById("type").value;
+        const amount = parseFloat(document.getElementById("amount").value);
 
-    function printDay() { window.print(); }
+        if (!desc || isNaN(amount)) {
+            alert("يرجى إدخال البيان والقيمة بشكل صحيح!");
+            return;
+        }
+
+        entries.push({ desc, type, amount });
+        saveData();
+        renderTable();
+
+        document.getElementById("desc").value = "";
+        document.getElementById("amount").value = "";
+    }
 
     function clearAll() {
-      if (confirm('هل تريد مسح كل البيانات؟')) {
-        data = [];
-        localStorage.removeItem('dailyData');
-        render();
-      }
+        if (confirm("هل أنت متأكد من مسح جميع البيانات؟")) {
+            entries = [];
+            saveData();
+            renderTable();
+        }
     }
 
-    render();
-  </script>
+    function printPage() {
+        window.print();
+    }
+
+    renderTable();
+</script>
+
 </body>
 </html>
