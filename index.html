@@ -72,6 +72,9 @@
         font-size: 18px;
     }
 
+    .select-box {
+        transform: scale(1.2);
+    }
 </style>
 </head>
 <body>
@@ -89,6 +92,7 @@
 
 <table id="records">
     <tr>
+        <th>الرقم</th>
         <th>البيان</th>
         <th>النوع</th>
         <th>القيمة</th>
@@ -105,10 +109,12 @@
 </div>
 
 <button onclick="clearAll()">🗑️ مسح الكل</button>
+<button onclick="enableSelection()">🗑️ اختر للحذف</button>
 <button onclick="printPage()">🖨️ طباعة اليوم</button>
 
 <script>
     let entries = JSON.parse(localStorage.getItem("entries")) || [];
+    let selectionMode = false;
 
     function saveData() {
         localStorage.setItem("entries", JSON.stringify(entries));
@@ -118,9 +124,11 @@
         const table = document.getElementById("records");
         table.innerHTML = `
             <tr>
+                <th>الرقم</th>
                 <th>البيان</th>
                 <th>النوع</th>
                 <th>القيمة</th>
+                ${selectionMode ? "<th>اختيار</th>" : ""}
             </tr>
         `;
 
@@ -131,9 +139,11 @@
             const row = document.createElement("tr");
             const typeClass = entry.type === "مصروف" ? "expense" : "asset";
             row.innerHTML = `
+                <td>${index}</td>
                 <td>${entry.desc}</td>
                 <td class="${typeClass}">${entry.type}</td>
                 <td>${entry.amount}</td>
+                ${selectionMode ? `<td><input type='checkbox' class='select-box' data-index='${index}'></td>` : ""}
             `;
             table.appendChild(row);
 
@@ -172,6 +182,39 @@
             entries = [];
             saveData();
             renderTable();
+        }
+    }
+
+    function enableSelection() {
+        if (!selectionMode) {
+            selectionMode = true;
+            renderTable();
+
+            const btn = document.querySelector('button[onclick="enableSelection()"]');
+            btn.textContent = "🗑️ حذف المحدد";
+            btn.onclick = deleteSelected;
+        } else {
+            selectionMode = false;
+            renderTable();
+
+            const btn = document.querySelector('button[onclick="deleteSelected()"]');
+            btn.textContent = "🗑️ اختر للحذف";
+            btn.onclick = enableSelection;
+        }
+    }
+
+    function deleteSelected() {
+        const checkboxes = document.querySelectorAll('.select-box:checked');
+        if (checkboxes.length === 0) {
+            alert("لم يتم اختيار أي صف للحذف!");
+            return;
+        }
+
+        if (confirm("هل تريد حذف العناصر المحددة؟")) {
+            const indexesToDelete = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
+            entries = entries.filter((_, index) => !indexesToDelete.includes(index));
+            saveData();
+            enableSelection(); // يعود الزر لوضعه الطبيعي
         }
     }
 
